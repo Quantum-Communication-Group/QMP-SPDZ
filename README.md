@@ -4,7 +4,7 @@ Integrates quantum-generated oblivious keys as Base OTs with the possibility of 
 
 The updates were carried out in the [`qdev`](https://github.com/diogoftm/QMP-SPDZ/tree/qdev) branch. This branch is based on [MP-SPDZ v0.4.0](https://github.com/data61/MP-SPDZ/tree/v0.4.0).
 
-## Supported (tested) protocols
+## Supported protocols
 
 | Program | Protocol |
 | --- | --- |
@@ -12,18 +12,19 @@ The updates were carried out in the [`qdev`](https://github.com/diogoftm/QMP-SPD
 | `semi-party.x` | Semi-honest version of [MASCOT](https://eprint.iacr.org/2016/505) |
 | `yao-party.x` | Yao with half-gate garbling (see [Zahur et al.](https://eprint.iacr.org/2014/756.pdf) and [Guo et al.](https://eprint.iacr.org/2019/1168.pdf)) |
 
+Tested on Pop!_OS 22.04 LTS, Ubuntu 22.04 LTS, Ubuntu Server 24.04 LTS.
+
 ## Supported Key Retrieval interfaces
 
 The current version supports the following KMS interfaces that are slightly modified for coexistence of both symmetric and oblivious keys (not in the scope of the original standards):
-- [ETSI QKD 014](https://www.etsi.org/deliver/etsi_gs/QKD/001_099/014/01.01.01_60/gs_qkd014v010101p.pdf) ([Demo server/client](https://github.com/diogoftm/simulated-kms))
+- [ETSI QKD 014](https://www.etsi.org/deliver/etsi_gs/QKD/001_099/014/01.01.01_60/gs_qkd014v010101p.pdf) ([Demo server/client](https://github.com/Quantum-Communication-Group/oblivious-etsi-gs-qkd-014))
 - [ETSI QKD 004](https://www.etsi.org/deliver/etsi_gs/QKD/001_099/004/02.01.01_60/gs_QKD004v020101p.pdf) ([Demo server/client](https://github.com/diogoftm/minimal-etsi-qkd-004))
-
 
 ## Installation and Example Usage
 
 1. Clone this repository and install main dependencies:
     ```bash
-    git clone https://github.com/diogoftm/QMP-SPDZ.git
+    git clone https://github.com/Quantum-Communication-Group/QMP-SPDZ
     cd QMP-SPDZ
     git submodule update --init --recursive
     apt-get install -y automake build-essential clang cmake git libgmp-dev libntl-dev libsodium-dev libssl-dev libtool libboost-dev libjansson-dev yasm texinfo libexplain-dev libb64-dev
@@ -34,17 +35,13 @@ The current version supports the following KMS interfaces that are slightly modi
     ```
 3. Build the library: 
     ```bash
-    make -j 8 tldr
+    make tldr
     ```
     Note: This command will rename either `OTKeys_014/` or `OTKeys_004/` to `OTKeys/` based on the `KEY_REQUEST_INTERFACE`.
     To change the interface, rename the directory back to its original name.
-4. Compile, for example, the MASCOT executable `mascot-party.x`:
-    ```bash
-    make -j 8 mascot-party.x
-    ```
-5. Create a parties IP file:
+4. Create a parties IP file:
 
-   In this file it is defined the IP, port and SAE ID of each party in the computation, and also an optional PSK per peer. 
+    In this file it is defined the IP, port and SAE ID of each party in the computation, and also an optional PSK per peer. 
 
     The general structure of the file is the following:
    ```
@@ -68,11 +65,11 @@ The current version supports the following KMS interfaces that are slightly modi
     127.0.0.1:1234 qkd://app1@aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa 550e8400-e29b-41d4-a716-446655440000 0 -
     127.0.0.1:1238 qkd://app2@bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb - - -
     ```
-7. Compile the MPC program (e.g. crash_detection_test):
+5. Compile the MPC program (e.g. crash_detection_test):
     ```bash
     ./compile.py -F 64 crash_detection_test
     ```
-8. Finally, run the computation (e.g. using mascot):
+6. Finally, run the computation (e.g. using mascot):
     ```bash
     ./mascot-party.x -N 2 -ip players_0.txt -I -p 0 crash_detection_test
     ./mascot-party.x -N 2 -ip players_1.txt -I -p 1 crash_detection_test
@@ -80,45 +77,28 @@ The current version supports the following KMS interfaces that are slightly modi
 
     For this computation just input 3 numbers separated by a space or by a new line. The first number is the flag (0 or 1) that tells if there was a crash or not, the other two number are the $(x, y)$ coordinates. The output will be the highest coordinate where a crash was indicated.
 
-# Generate shared keys
+## Environment Variables 
 
-Shared key generation is performed, if wished, before running the computation in order to set up the PSK filed in the respective parties file. 
-This can be done using the `generate_shared_key.py` script that will perform an online key exchange using a Key Encapsulation Mechanism (KEM). Currently, the only supported KEM is [ML-KEM](https://csrc.nist.gov/pubs/fips/203/final) that will be used by default leveraging [BoringSSL](https://boringssl.googlesource.com/boringssl)'s implementation. 
+- `KEY_REQUEST_INTERFACE` - Interface standard to be used to fetch oblivious keys in the KMS. Accepts '004' or '014';
+- `KMS_URI` - URI of the KMS. Use something like '127.0.0.1:25575' for 004 and 'https://127.0.0.1/api/v1/keys/'
+- `ROOT_CA` - Path to the file containing the root CA certificate to be used when contacting the KMS;  
+- `SENDER_SAE_CRT` - Path to the file containing the SAE certificate to be used when contacting the KMS when playing the Tx role.
+- `SENDER_SAE_KEY` - Path to the file containing the SAE key to be used when contacting the KMS when planing the Tx role.
+- `RECEIVER_SAE_CRT` - Path to the file containing the SAE certificate to be used when contacting the KMS when playing the Rx role.
+- `RECEIVER_SAE_KEY` - Path to the file containing the SAE key to be used when contacting the KMS when playing the Rx role.
+- `SENDER_STRICT_ROLE` - If only one role of keys is available when playing the Tx role, define what is it, key role inversion will be performed if needed. Accepts 'tx' or 'rx'.
+- `RECEIVER_STRICT_ROLE` - If only one role of keys is available when playing the Rx role, define what is it, key role inversion will be performed if needed. Accepts 'tx' or 'rx'.
+- `SENDER_SAE_ID` - SAE ID used when playing the Tx role
+- `RECEIVER_SAE_ID` - SAE ID used when playing the Rx role.
 
-For each party run:
-```bash
-python3 pq/generate_shared_key.py <ip-file-name> <playerno>
-```
+Commonly the variables only differentiated by the role its is being played (e.g. `SENDER_SAE_CRT` and `RECEIVER_SAE_CRT`) have the same value.
 
-The script will also automatically update the respective parties file (`<ip-file-name>`) with the generated keys.
-
-The flow of the key exchange between two parties is depicted in the diagram bellow.
-
-```mermaid
-sequenceDiagram
-    participant PartyA as Party A
-    participant PartyB as Party B
-
-    Note over PartyA: Generate Ephemeral Keys (A_pub, A_priv)
-    Note over PartyB: Generate Ephemeral Keys (B_pub, B_priv)
-
-    PartyA->>PartyB: Send Public Key (A_pub)
-    PartyB->>PartyA: Send Public Key (B_pub)
-
-    Note over PartyA: Encapsulate Key using B_pub (K0, Encapsulated_K0)
-    PartyA->>PartyB: Send Encapsulated_K0
-    Note over PartyB: Decapsulate Encapsulated_K0 → K0 using B_priv
-    Note over PartyB: Encapsulate Key A_pub (K1, Encapsulated_K1)
-
-    PartyB->>PartyA: Send Encapsulated_K1
-
-    Note over PartyA: Decapsulate Encapsulated_K1 → K1 using A_priv
-
-    Note over PartyA, PartyB: Shared Key = K0 ⊕ K1
-```
-
-This script should be seen only as an example basepoint to setup the PSKs using PQC and not as a finishd solution.
-
-# More documentation
+## More Documentation
 
 Please check the original MP-SPDZ [documentation](https://mp-spdz.readthedocs.io/en/v0.4.0/).
+
+## Related Research Papers
+
+- [Quantum-Enabled Secure Computation Medical Service](https://dl.acm.org/doi/10.1145/3749096.3750036)
+- [Quantum Oblivious Transfer: A Short Review](https://www.mdpi.com/1099-4300/24/7/945)
+- [Generation and Distribution of Quantum Oblivious Keys for Secure Multiparty Computation](https://www.mdpi.com/2076-3417/10/12/4080)

@@ -12,7 +12,7 @@
 	url = https://github.com/DLTcollab/sse2neon
 [submodule "OTKeys_004/OTKeys"]
 	path = OTKeys_004/OTKeys
-	url = https://github.com/diogoftm/OTKeys.git
+	url = https://github.com/Quantum-Communication-Group/OTKeys
 [submodule "OTKeys_014/OTKeys"]
 	path = OTKeys_014/OTKeys
-	url = https://github.com/diogoftm/OTKeys.git
+	url = https://github.com/Quantum-Communication-Group/OTKeys
